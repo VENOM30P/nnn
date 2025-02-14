@@ -1,0 +1,211 @@
+Aqui está a versão melhorada dos arquivos, com melhorias de segurança, organização e boas práticas:
+
+### 1. .gitignore (atualizado)
+```gitignore
+# Adicionado novas regras de segurança e configurações modernas
+.env*
+!.env.example
+secrets/
+.vscode/
+.idea/
+*.DS_Store
+*.log
+logs/
+
+# Configurações específicas de CI/CD
+.github/
+.gitlab-ci.yml
+
+# Banco de dados e backups
+*.db
+*.dump
+*.bak
+
+# Restante mantido conforme original...
+```
+
+### 2. main.py (versão melhorada)
+```python
+import os
+from flask import Flask, request, jsonify, render_template
+from dotenv import load_dotenv
+import mercadopago
+
+# Configurações iniciais
+load_dotenv()  # Carrega variáveis de ambiente do .env
+
+app = Flask(__name__)
+app.config.update(
+    SECRET_KEY=os.getenv('FLASK_SECRET_KEY', 'dev-secret-key'),
+    ENV=os.getenv('FLASK_ENV', 'development'),
+    MERCADOPAGO_ACCESS_TOKEN=os.getenv('MERCADOPAGO_ACCESS_TOKEN')
+)
+
+# Validação de configuração essencial
+if not app.config['MERCADOPAGO_ACCESS_TOKEN']:
+    raise ValueError("MERCADOPAGO_ACCESS_TOKEN não configurado no ambiente")
+
+sdk = mercadopago.SDK(app.config['MERCADOPAGO_ACCESS_TOKEN'])
+
+@app.route('/')
+def index():
+    """Página principal da loja"""
+    return render_template('index.html')
+
+@app.route('/cart')
+def cart():
+    """Página do carrinho de compras"""
+    return render_template('cart.html')
+
+@app.route('/api/payment/pix', methods=['POST'])
+def create_pix_payment():
+    """Cria um pagamento PIX com validação de dados"""
+    try:
+        # Validação básica do payload
+        if not request.is_json:
+            return jsonify({"error": "Content-Type must be application/json"}), 415
+            
+        cart_data = request.get_json()
+        cart_total = cart_data.get('total')
+        
+        if not cart_total or not isinstance(cart_total, (int, float)):
+            return jsonify({"error": "Valor do carrinho inválido"}), 400
+
+        payment_payload = {
+            "transaction_amount": float(cart_total),
+            "description": "Compra na Loja Esportiva",
+            "payment_method_id": "pix",
+            "payer": {
+                "email": cart_data.get('email', ''),
+                "first_name": cart_data.get('first_name', ''),
+                "last_name": cart_data.get('last_name', ''),
+                "identification": {
+                    "type": "CPF",
+                    "number": cart_data.get('cpf', '')
+                }
+            }
+        }
+
+        payment_response = sdk.payment().create(payment_payload)
+        
+        if payment_response["status"] not in [200, 201]:
+            app.logger.error(f'Erro MercadoPago: {payment_response}')
+            return jsonify({"error": "Falha na comunicação com o gateway de pagamento"}), 502
+
+        payment_data = payment_response["response"]
+        return jsonify({
+            "payment_id": payment_data['id'],
+            "pix_code": payment_data['point_of_interaction']['transaction_data']['qr_code'],
+            "qr_code_base64": payment_data['point_of_interaction']['transaction_data']['qr_code_base64'],
+            "expiration_date": payment_data['date_of_expiration']
+        })
+
+    except Exception as e:
+        app.logger.exception("Erro inesperado no processamento do PIX")
+        return jsonify({"error": "Erro interno no processamento do pagamento"}), 500
+
+@app.route('/api/payment/status/<payment_id>', methods=['GET'])
+def payment_status(payment_id):
+    """Verifica o status de um pagamento"""
+    try:
+        payment = sdk.payment().get(payment_id)
+        if payment["status"] != 200:
+            return jsonify({"status": "error"}), 400
+            
+        return jsonify({
+            "status": payment['response']['status'],
+            "amount": payment['response']['transaction_amount'],
+            "currency": payment['response']['currency_id']
+        })
+    except Exception as e:
+        app.logger.error(f"Erro ao verificar pagamento {payment_id}: {str(e)}")
+        return jsonify({"status": "error"}), 500
+
+if __name__ == '__main__':
+    port = int(os.getenv('PORT', 8080))
+    app.run(host='0.0.0.0', port=port)
+```
+
+### 3. pyproject.toml (atualizado)
+```toml
+[project]
+name = "ecommerce-pix-payments"
+version = "1.0.0"
+description = "API de pagamentos PIX integrada ao Mercado Pago"
+authors = [{name = "Seu Nome", email = "seu.email@example.com"}]
+requires-python = ">=3.11"
+dependencies = [
+    "Flask>=3.0.0",
+    "python-dotenv>=1.0.0",
+    "mercadopago>=2.2.3",
+    "Werkzeug>=3.0.1",
+    "flask-sqlalchemy>=3.1.1"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "requests-mock>=1.11.0",
+    "flake8>=6.1.0"
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+```
+
+### 4. requirements.txt (atualizado)
+```text
+# Dependências principais
+Flask==3.0.2
+python-dotenv==1.0.0
+mercadopago==2.2.3
+Werkzeug==3.0.1
+flask-sqlalchemy==3.1.1
+
+# Dependências de desenvolvimento (opcional)
+pytest==7.4.0
+requests-mock==1.11.0
+flake8==6.1.0
+```
+
+### Principais melhorias implementadas:
+
+1. **Segurança:**
+   - Remoção de credenciais hardcoded
+   - Uso de variáveis de ambiente via python-dotenv
+   - Validação de dados de entrada
+   - Tratamento apropriado de erros
+
+2. **Organização:**
+   - Separação clara de responsabilidades
+   - Documentação de endpoints
+   - Estrutura escalável para adição de novas funcionalidades
+   - Logging apropriado
+
+3. **Boas Práticas:**
+   - Versionamento consistente entre pyproject.toml e requirements.txt
+   - Endpoints RESTful melhor definidos
+   - Status HTTP semânticos
+   - Configuração centralizada
+
+4. **Extensibilidade:**
+   - Preparado para integração com banco de dados
+   - Estrutura para testes automatizados
+   - Configuração de ambiente de desenvolvimento
+
+**Sugestão de arquivo .env:**
+```env
+# Configurações essenciais
+MERCADOPAGO_ACCESS_TOKEN=TEST-1234567890123456
+FLASK_SECRET_KEY=super-secret-key
+FLASK_ENV=development
+
+# Configurações opcionais
+PORT=8080
+```
+
+Para executar o projeto:
+```bash
+python -m pip install -r requirements.txt
+python main.py
+```

@@ -1,0 +1,36 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Once 11+ Premium</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="{{ url_for('static', filename='script.js') }}" defer></script>
+</head>
+<body>
+    <header>
+        <nav>
+            <h1>Once 11+ Premium</h1>
+            <a href="/" class="home-link">Voltar à Loja</a>
+        </nav>
+    </header>
+    
+    <main class="subscription-page">
+        <section class="subscription-info">
+            <h2>Descubra o Inesperado</h2>
+            <p>Receba todo mês uma caixa surpresa com produtos esportivos premium selecionados especialmente para você.</p>
+        </section>
+
+        <section class="subscription-plans">
+            {% for plan in plans %}
+            <div class="plan-card">
+                <h3>{{ plan.name }}</h3>
+                <p class="price">R$ {{ "%.2f"|format(plan.price) }}/mês</p>
+                <p>{{ plan.description }}</p>
+                <button onclick="subscribe({{ plan.id }})">Assinar Agora</button>
+            </div>
+            {% endfor %}
+        </section>
+    </main>
+</body>
+</html>

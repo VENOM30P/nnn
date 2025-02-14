@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Once 11</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header>
+        <nav>
+            <h1>Loja Esportiva</h1>
+            <div class="nav-links">
+                <a href="/cart" class="home-link">Carrinho</a>
+                <a href="/subscription" class="premium-link">Once 11+ Premium</a>
+            </div>
+        </nav>
+    </header>
+    
+    <main>
+        <section class="products">
+            {% for product in products %}
+            <article class="product-card">
+                <h3>{{ product.name }}</h3>
+                <p class="price">{{ "R$ %.2f"|format(product.price) }}</p>
+                <button onclick="addToCart({{ product.id }})" class="add-to-cart-btn">
+                    Adicionar ao Carrinho
+                </button>
+            </article>
+            {% endfor %}
+        </section>
+    </main>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,60 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carrinho - Loja Esportiva</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header>
+        <nav>
+            <h1>Seu Carrinho</h1>
+            <a href="/" class="home-link">Voltar à Loja</a>
+        </nav>
+    </header>
+    
+    <main>
+        <section class="cart-items">
+            {% if products %}
+                {% for product in products %}
+                <article class="cart-item">
+                    <h3>{{ product.name }}</h3>
+                    <p class="price">{{ "R$ %.2f"|format(product.price) }}</p>
+                </article>
+                {% endfor %}
+                <div class="cart-total">
+                    <h3>Total</h3>
+                    <div>
+                        <p class="price">{{ "R$ %.2f"|format(total) }}</p>
+                        <button onclick="initPayment()" class="checkout-btn">Pagar com PIX</button>
+                    </div>
+                </div>
+            <div id="payment-modal" class="payment-modal">
+                <div class="payment-content">
+                    <h3>Pagamento PIX</h3>
+                    <p>Valor: {{ "R$ %.2f"|format(total) }}</p>
+                    <div id="pix-qr" class="qr-container"></div>
+                    <p id="pix-code"></p>
+                    <div class="payment-instructions">
+                        <p>1. Abra seu app de pagamentos</p>
+                        <p>2. Selecione pagar via PIX</p>
+                        <p>3. Escaneie o QR Code ou copie o código</p>
+                    </div>
+                    <button onclick="copyPixCode()" class="copy-btn">Copiar Código</button>
+                    <p id="payment-status"></p>
+                    <button onclick="closePaymentModal()" class="close-btn">Fechar</button>
+                </div>
+            </div>
+            {% else %}
+                <div class="empty-cart">
+                    <h2>Seu carrinho está vazio</h2>
+                    <p>Volte à loja e adicione alguns produtos!</p>
+                </div>
+            {% endif %}
+        </section>
+    </main>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
