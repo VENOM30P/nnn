@@ -2,7 +2,8 @@ import { Product } from "@shared/schema";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useMutation } from "@tanstack/react-query";
 
 interface ProductCardProps {
   product: Product;
@@ -11,24 +12,28 @@ interface ProductCardProps {
 export function ProductCard({ product }: ProductCardProps) {
   const { toast } = useToast();
 
-  const addToCart = async () => {
-    try {
+  const addToCartMutation = useMutation({
+    mutationFn: async () => {
       await apiRequest("POST", "/api/cart", {
-        productId: product.id,
+        productId: Number(product.id),
         quantity: 1
       });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/cart"] });
       toast({
         title: "Added to cart",
         description: `${product.name} has been added to your cart.`
       });
-    } catch (error) {
+    },
+    onError: (error: Error) => {
       toast({
         title: "Error",
-        description: "Failed to add item to cart",
+        description: error.message,
         variant: "destructive"
       });
     }
-  };
+  });
 
   return (
     <Card className="overflow-hidden transition-transform hover:scale-105">
@@ -45,8 +50,12 @@ export function ProductCard({ product }: ProductCardProps) {
         </p>
       </CardContent>
       <CardFooter className="p-4 pt-0">
-        <Button onClick={addToCart} className="w-full">
-          Add to Cart
+        <Button 
+          onClick={() => addToCartMutation.mutate()}
+          disabled={addToCartMutation.isPending}
+          className="w-full"
+        >
+          {addToCartMutation.isPending ? "Adding..." : "Add to Cart"}
         </Button>
       </CardFooter>
     </Card>
