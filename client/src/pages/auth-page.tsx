@@ -26,12 +26,6 @@ export default function AuthPage() {
   const { user, loginMutation, registerMutation } = useAuth();
   const [, setLocation] = useLocation();
 
-  // Redirect if already logged in
-  if (user) {
-    setLocation("/");
-    return null;
-  }
-
   const loginForm = useForm<AuthFormData>({
     resolver: zodResolver(insertUserSchema),
     defaultValues: {
@@ -47,6 +41,12 @@ export default function AuthPage() {
       password: "",
     },
   });
+
+  if (user) {
+    // Use setTimeout to avoid state updates during render
+    setTimeout(() => setLocation("/"), 0);
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
