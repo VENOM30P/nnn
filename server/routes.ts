@@ -1,0 +1,59 @@
+import type { Express } from "express";
+import { createServer, type Server } from "http";
+import { setupAuth } from "./auth";
+import { storage } from "./storage";
+import { insertCartItemSchema } from "@shared/schema";
+
+export async function registerRoutes(app: Express): Promise<Server> {
+  setupAuth(app);
+
+  // Products
+  app.get("/api/products", async (_req, res) => {
+    const products = await storage.getProducts();
+    res.json(products);
+  });
+
+  // Cart
+  app.get("/api/cart", async (req, res) => {
+    if (!req.user) return res.sendStatus(401);
+    const items = await storage.getCartItems(req.user.id);
+    res.json(items);
+  });
+
+  app.post("/api/cart", async (req, res) => {
+    if (!req.user) return res.sendStatus(401);
+    
+    const result = insertCartItemSchema.safeParse(req.body);
+    if (!result.success) {
+      return res.status(400).json(result.error);
+    }
+
+    await storage.addToCart(req.user.id, result.data.productId, result.data.quantity);
+    res.sendStatus(201);
+  });
+
+  app.delete("/api/cart/:id", async (req, res) => {
+    if (!req.user) return res.sendStatus(401);
+    await storage.removeFromCart(parseInt(req.params.id));
+    res.sendStatus(200);
+  });
+
+  // Subscription Plans
+  app.get("/api/subscription-plans", async (_req, res) => {
+    const plans = await storage.getSubscriptionPlans();
+    res.json(plans);
+  });
+
+  app.post("/api/subscribe", async (req, res) => {
+    if (!req.user) return res.sendStatus(401);
+    
+    const { planId } = req.body;
+    if (!planId) return res.status(400).json({ error: "Plan ID required" });
+
+    await storage.updateUserPremiumStatus(req.user.id, true);
+    res.sendStatus(200);
+  });
+
+  const httpServer = createServer(app);
+  return httpServer;
+}
