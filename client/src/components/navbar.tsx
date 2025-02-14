@@ -1,7 +1,7 @@
 import { Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, LogOut } from "lucide-react";
+import { ShoppingCart, LogOut, UserCog } from "lucide-react";
 
 export function Navbar() {
   const { user, logoutMutation } = useAuth();
@@ -23,7 +23,16 @@ export function Navbar() {
               Once 11+ Premium
             </a>
           </Link>
-          
+
+          {/* Show admin link only to user with ID 1 */}
+          {user?.id === 1 && (
+            <Link href="/admin">
+              <a className="p-2 hover:bg-gray-100 rounded-full" title="Admin Panel">
+                <UserCog className="h-5 w-5 text-gray-700" />
+              </a>
+            </Link>
+          )}
+
           <Link href="/cart">
             <a className="p-2 hover:bg-gray-100 rounded-full">
               <ShoppingCart className="h-5 w-5 text-gray-700" />

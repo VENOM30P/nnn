@@ -19,7 +19,7 @@ export interface IStorage {
   removeFromCart(id: number): Promise<void>;
   
   getSubscriptionPlans(): Promise<SubscriptionPlan[]>;
-  
+  getAllUsers(): Promise<User[]>; // Add this new method
   sessionStore: session.Store;
 }
 
@@ -145,6 +145,10 @@ export class MemStorage implements IStorage {
 
   async getSubscriptionPlans(): Promise<SubscriptionPlan[]> {
     return Array.from(this.subscriptionPlans.values());
+  }
+
+  async getAllUsers(): Promise<User[]> { // Add this new method
+    return Array.from(this.users.values());
   }
 }
 

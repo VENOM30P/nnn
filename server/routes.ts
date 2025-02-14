@@ -76,6 +76,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.sendStatus(200);
   });
 
+  // Add this after other routes but before returning httpServer
+  app.get("/api/admin/users", async (req, res) => {
+    if (!req.user) return res.sendStatus(401);
+    // For simplicity, we'll consider the first user as admin
+    // In production, you would want proper admin role checks
+    if (req.user.id !== 1) return res.sendStatus(403);
+
+    const users = await storage.getAllUsers();
+    res.json(users);
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
