@@ -17,19 +17,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/cart", async (req, res) => {
     if (!req.user) return res.sendStatus(401);
     const items = await storage.getCartItems(req.user.id);
-    res.json(items);
+
+    // Get products for each cart item
+    const itemsWithProducts = await Promise.all(
+      items.map(async (item) => {
+        const product = await storage.getProductById(item.productId);
+        return { ...item, product };
+      })
+    );
+
+    res.json(itemsWithProducts);
   });
 
   app.post("/api/cart", async (req, res) => {
     if (!req.user) return res.sendStatus(401);
-    
-    const result = insertCartItemSchema.safeParse(req.body);
-    if (!result.success) {
-      return res.status(400).json(result.error);
-    }
 
-    await storage.addToCart(req.user.id, result.data.productId, result.data.quantity);
-    res.sendStatus(201);
+    try {
+      const result = insertCartItemSchema.safeParse({
+        ...req.body,
+        userId: req.user.id
+      });
+
+      if (!result.success) {
+        return res.status(400).json(result.error);
+      }
+
+      await storage.addToCart(
+        req.user.id,
+        result.data.productId,
+        result.data.quantity
+      );
+      res.sendStatus(201);
+    } catch (error) {
+      console.error("Cart error:", error);
+      res.status(500).json({ message: "Failed to add item to cart" });
+    }
   });
 
   app.delete("/api/cart/:id", async (req, res) => {
@@ -46,7 +68,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/subscribe", async (req, res) => {
     if (!req.user) return res.sendStatus(401);
-    
+
     const { planId } = req.body;
     if (!planId) return res.status(400).json({ error: "Plan ID required" });
 

@@ -29,9 +29,10 @@ export function ProductCard({ product }: ProductCardProps) {
     onError: (error: Error) => {
       toast({
         title: "Error",
-        description: error.message,
+        description: "Failed to add item to cart. Please try again.",
         variant: "destructive"
       });
+      console.error("Add to cart error:", error);
     }
   });
 
